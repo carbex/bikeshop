@@ -10,6 +10,51 @@ var dataBike = [
   {name:"LIK099", url:"/images/bike-6.jpg", price:869},
 ]
 
+// Route stripe module de paiemement en ligne
+
+const Stripe = require('stripe');
+const stripe = Stripe('sk_test_51IbjhSEifScnyKE5pzhtLh5oKWz1dqG41lJYPdEKrsNYAB74hzU67CKj6REh1rz0wk3u44zp4uRq8ADsMkP549Az00kjnjWbP3');
+
+router.post('/create-checkout-session', async (req, res) => {
+let basketForStripe = []
+
+for(let i=0; i<req.session.dataCardBike.length; i++) {
+  basketForStripe[i] = 
+    {
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name: req.session.dataCardBike[i].name,
+        },
+        unit_amount: req.session.dataCardBike[i].price*100,
+      },
+      quantity: req.session.dataCardBike[i].quantity,
+    } 
+}
+
+ const session = await stripe.checkout.sessions.create({
+   payment_method_types: ['card'],
+   line_items: basketForStripe,
+   mode: 'payment',
+   success_url: 'https://bikeshop-alex-04-2021.herokuapp.com/success',
+   cancel_url: 'https://bikeshop-alex-04-2021.herokuapp.com/cancel',
+ });
+
+ res.json({ id: session.id });
+});
+
+// Page de confirmation de creation de cmde
+
+ router.get('/success', (req, res) => {
+  res.render('success');
+ });
+
+// Page de confirmation de l’annulation
+
+ router.get('/cancel', (req, res) => {
+  res.render('index', {dataBike:dataBike});
+ });
+
 
 /* GET home page. */
 router.get('/', function(req, res, next) {

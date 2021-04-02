@@ -10,6 +10,8 @@
         <link href="https://fonts.googleapis.com/css?family=Darker+Grotesque&display=swap" rel="stylesheet">
 
         <script src="https://kit.fontawesome.com/a41e9403cf.js" crossorigin="anonymous"></script>
+        <script src="https://js.stripe.com/v3/"></script>
+        
         <title>BikeShop - Shop</title>
     </head>
 
@@ -101,7 +103,7 @@
                 </div>
                 <div class="row">
                     <div class="col-12 text-right">
-                        <button class="btn btn-outline-info btn-sm btn-checkout" name="button-checkout">Checkout</button>
+                        <button id="checkout-button" class="btn btn-outline-info btn-sm btn-checkout" name="button-checkout">Checkout</button>
                     </div>
                 </div>
 
@@ -111,6 +113,35 @@
             
                 
         </div>
+
+        <script type="text/javascript">
+     var stripe = Stripe('pk_test_51IbjhSEifScnyKE579vUUWmbSL20LRIN7X13Nj03ndOsmQCCXtTGPg1pAs5LC5KDhxdkuWwRFePrT2PdYLfnKOL200dhh0nXdu');
+     var checkoutButton = document.getElementById('checkout-button');
+
+     checkoutButton.addEventListener('click', function() {
+       fetch('/create-checkout-session', {
+         method: 'POST',
+       })
+       .then(function(response) {
+         return response.json();
+       })
+       .then(function(session) {
+         return stripe.redirectToCheckout({ sessionId: session.id });
+       })
+       .then(function(result) {
+         // If `redirectToCheckout` fails due to a browser or network
+         // error, you should display the localized error message to your
+         // customer using `error.message`.
+         if (result.error) {
+           alert(result.error.message);
+         }
+       })
+       .catch(function(error) {
+         console.error('Error:', error);
+       });
+     });
+   </script>
+        
         
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
