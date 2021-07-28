@@ -1,110 +1,75 @@
-var express = require('express');
-var router = express.Router();
+let express = require('express');
+const bikes = require('../models/bikes');
+let router = express.Router();
 
-var dataBike = [
-  {name:"BIK045", url:"/images/bike-1.jpg", price:679},
-  {name:"ZOOK07", url:"/images/bike-2.jpg", price:999},
-  {name:"TITANS", url:"/images/bike-3.jpg", price:799},
-  {name:"CEWO", url:"/images/bike-4.jpg", price:1300},
-  {name:"AMIG039", url:"/images/bike-5.jpg", price:479},
-  {name:"LIK099", url:"/images/bike-6.jpg", price:869},
-]
+const Product = require('../models/products');
+const Bike = require('../models/bikes');
 
-// Route stripe module de paiemement en ligne
+// let dataBike = [
+//   {name:"BIK045", url:"/images/bike-1.jpg", price:679, mea: false, modeLiv:["1", "2"], quantity: 10},
+//   {name:"ZOOK07", url:"/images/bike-2.jpg", price:999, mea: false, modeLiv:["1", "3"], quantity: 13},
+//   {name:"TITANS", url:"/images/bike-3.jpg", price:799, mea: false, modeLiv:["1", "2", "3"], quantity: 2},
+//   {name:"CEWO", url:"/images/bike-4.jpg", price:1300, mea: false, modeLiv:["1", "2", "3"], quantity: 34},
+//   {name:"AMIG039", url:"/images/bike-5.jpg", price:479, mea: false, modeLiv:["1", "2", "3"], quantity: 5},
+//   {name:"LIK099", url:"/images/bike-6.jpg", price:869, mea: false, modeLiv:["1", "2"], quantity: 0},
+// ]
 
-const Stripe = require('stripe');
-const stripe = Stripe('sk_test_51IbjhSEifScnyKE5pzhtLh5oKWz1dqG41lJYPdEKrsNYAB74hzU67CKj6REh1rz0wk3u44zp4uRq8ADsMkP549Az00kjnjWbP3');
+// let cheaperBikes = []
 
-router.post('/create-checkout-session', async (req, res) => {
-let basketForStripe = []
+// dataBike.sort(function compare(a, b) {
+//   if (a.price < b.price)
+//      return -1;
+//   if (a.price > b.price )
+//      return 1;
+//   return 0;
+// });
+// cheaperBikes = [dataBike[0], dataBike[1], dataBike[2]]
 
-for(let i=0; i<req.session.dataCardBike.length; i++) {
-  basketForStripe[i] = 
-    {
-      price_data: {
-        currency: 'eur',
-        product_data: {
-          name: req.session.dataCardBike[i].name,
-        },
-        unit_amount: req.session.dataCardBike[i].price*100,
-      },
-      quantity: req.session.dataCardBike[i].quantity,
-    } 
-}
 
- const session = await stripe.checkout.sessions.create({
-   payment_method_types: ['card'],
-   line_items: basketForStripe,
-   mode: 'payment',
-   success_url: 'https://bikeshop-alex-04-2021.herokuapp.com/success',
-   cancel_url: 'https://bikeshop-alex-04-2021.herokuapp.com/cancel',
- });
-
- res.json({ id: session.id });
-});
-
-// Page de confirmation de creation de cmde
-
- router.get('/success', (req, res) => {
-  res.render('success');
- });
-
-// Page de confirmation de l’annulation
-
- router.get('/cancel', (req, res) => {
-  res.render('index', {dataBike:dataBike});
- });
-
+// router.get('/initialize', async (req, res, next) => {
+//   for(let i=0; i<dataBike.length; i++) {
+//     const newProduct = new Product(dataBike[i])
+//     await newProduct.save()
+//   }
+//   res.redirect('/')
+// });
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', async (req, res, _next) => {
 
   if(req.session.dataCardBike == undefined){
     req.session.dataCardBike = []
   }
-  
-  res.render('index', {dataBike:dataBike});
-});
 
-router.get('/shop', function(req, res, next) {
+  const products = await Product.find()
+  // const cheaperProducts = await Product.find().sort({ price: 1}).limit(3)
+  // const cheaperProductsName = cheaperProducts.map(cheaperProduct => cheaperProduct.name)
+  const limitOfCheaperProductsToDisplay = 3
+  const cheaperProductsName = await (await Product.find().sort({ price: 1}).limit(limitOfCheaperProductsToDisplay)).map(cheaperProduct => cheaperProduct.name)
+  await Product.updateMany({ name: cheaperProductsName }, { $set: {mea: true} })
+  await Product.updateMany({ name: { $nin: cheaperProductsName } }, { $set: {mea: false} })
+  const bikes = await Bike.find()
 
-  var alreadyExist = false;
-
-  for(var i = 0; i< req.session.dataCardBike.length; i++){
-    if(req.session.dataCardBike[i].name == req.query.bikeNameFromFront){
-      req.session.dataCardBike[i].quantity = Number(req.session.dataCardBike[i].quantity) + 1;
-      alreadyExist = true;
+  req.session.count = 0
+  if(bikes) {
+    for(let i=0; i<bikes.length; i++) {
+      req.session.count += bikes[i].quantity
     }
   }
 
-  if(alreadyExist == false){
-    req.session.dataCardBike.push({
-      name: req.query.bikeNameFromFront,
-      url: req.query.bikeImageFromFront,
-      price: req.query.bikePriceFromFront,
-      quantity: 1
-    })
-  }
+  // let cheaperBikes = []
 
+  // products.sort(function compare(a, b) {
+  //   if (a.price < b.price)
+  //     return -1;
+  //   if (a.price > b.price )
+  //     return 1;
+  //   return 0;
+  // });
+  // cheaperBikes = [products[0], products[1], products[2]]
 
-  res.render('shop', {dataCardBike:req.session.dataCardBike});
+  res.render('index', {dataBike: products, count: req.session.count});
 });
 
-router.get('/delete-shop', function(req, res, next){
-  
-  req.session.dataCardBike.splice(req.query.position,1)
-
-  res.render('shop',{dataCardBike:req.session.dataCardBike})
-})
-
-router.post('/update-shop', function(req, res, next){
-  
-  var position = req.body.position;
-  var newQuantity = req.body.quantity;
-
-  req.session.dataCardBike[position].quantity = newQuantity;
-
-  res.render('shop',{dataCardBike:req.session.dataCardBike})
-})
 
 module.exports = router;

@@ -11,7 +11,7 @@
 
         <script src="https://kit.fontawesome.com/a41e9403cf.js" crossorigin="anonymous"></script>
         <script src="https://js.stripe.com/v3/"></script>
-        
+              
         <title>BikeShop - Shop</title>
     </head>
 
@@ -31,8 +31,8 @@
   
             </div>  
             <div class="row ariane">
-                <nav aria-label="breadcrumb" class="col-12">
-                    <ol class="breadcrumb">
+                <nav aria-label="breadcrumb" class="col-12 ">
+                    <ol class="breadcrumb shadow">
                         <li class="breadcrumb-item"><a href="/">Shop</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Basket</li>
                     </ol>
@@ -41,14 +41,15 @@
 
 
             <h1>Basket</h1>
+            <%= (typeof message !== "undefined") ? message : '' %> 
 
             <% if(dataCardBike.length < 1){%>
                 <h5 class="no-article">No article in the Basket</h5>
             
             <%} else {%>
                 <div class="row">
-                    <table class="table">
-                        <thead>
+                    <table class="table table-bordered">
+                        <thead class="thead-dark">
                           <tr>
                             <th scope="col">#</th>
                             <th scope="col">Picture</th>
@@ -60,27 +61,43 @@
                           </tr>
                         </thead>
                         <tbody>
-                            <% 
-    
+                            <%    
                             var totalCmd = 0;
                             for(var i=0;i<dataCardBike.length;i++){
                             %>
                                 <tr class="basket-item">
-                                    <th scope="row"><%=i%></th>
+                                    <th scope="row"><%=i+1%></th>
                                     <td><img src=<%= dataCardBike[i].url %> class="basket-img"></td>
                                     <td>
                                         <%= dataCardBike[i].name %>
                                     </td>
                                     <td>
-                                        <form action="/update-shop" method="POST">
+                                        <form action="/shop/update-product" method="POST">
                                             <input type="hidden" name="position" value="<%=i%>">
-                                            <input type="text" name="quantity" value="<%= dataCardBike[i].quantity%>">
-                                            <button type="submit" class="btn btn-outline-info btn-sm" name="button"><i class="fas fa-sync-alt"></i></button>
+                                            <input type="hidden" name="name" value="<%=dataCardBike[i].name%>">
+                                            <div class="d-flex">
+                                                <select class="form-select form-select-box-shadow rounded" aria-label="Default select example" name="quantity">
+                                                <option selected><%= dataCardBike[i].quantity%></option>
+                                                <%
+                                                for(let j=0; j<products.length; j++ ) {
+                                                    if(dataCardBike[i].name === products[j].name) {
+                                                        for(let k=1; k<=products[j].quantity+1; k++){  
+                                                %>
+                                                            <option value="<%= k %>"><%= k %></option> 
+                                                <%      
+                                                        }
+                                                    }
+                                                } 
+                                                %>
+                                                </select>   
+                                                <button type="submit" class="btn btn-outline-info btn-sm ml-2"><i class="fas fa-sync-alt"></i></button>
+                                            </div>
+                                            
                                         </form>
                                     </td>
                                     <td><%= dataCardBike[i].price %>€</td>
                                     <td><%= dataCardBike[i].price * dataCardBike[i].quantity %>€</td>
-                                    <td><a href="/delete-shop?position=<%=i%>"><button class="btn btn-outline-info btn-sm" name="button"><i class="far fa-trash-alt"></i></button></a></td>
+                                    <td><a href="/shop/delete-product?position=<%=i%>&name=<%=dataCardBike[i].name%>"><button class="btn btn-outline-info btn-sm" name="button"><i class="far fa-trash-alt"></i></button></a></td>
                                 </tr>
                             <%
                                 totalCmd += dataCardBike[i].price * dataCardBike[i].quantity;
@@ -88,24 +105,51 @@
                             }
                             %>
                             
-    
-                          <tr>
-                            <th scope="row"></th>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td class="total-box">Total Basket : </td>
-                            <td><%= totalCmd %>€</td>
-                            <td></td>
-                          </tr>
+                            <tr>
+                                <th scope="row"></th>
+                                <td colspan="3"></td>
+                                <td class="d-flex border-0">
+                                    Frais de port:
+                                    <form action="/shop/update-charges" method="post" class="ml-4">
+                                                                       
+                                        <% 
+                                        for(let i=0; i<modesLivraison.length; i++) { 
+                                            check = ""
+                                            if(modeLivraison.id === modesLivraison[i].id) {
+                                                check = "checked"
+                                            }
+                                        %>   
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="modeLivraisonId" value="<%= modesLivraison[i].id %>" id="standard" <%= check %>>
+                                            <label class="form-check-label" for="standard"><%= modesLivraison[i].libelle %> (<%= (modesLivraison[i].montant === 0)?'Frais de port offert !!!':`${modesLivraison[i].montant}€` %>)</label>
+                                        </div>
+
+                                        <% 
+                                        } 
+                                        %>
+                                    </form>    
+                                </td>
+                                <td>
+                                    <%= totalCharges %>€                                
+                                </td>
+                                <td></td>
+                            </tr>
+
+                            <tfoot class="tfoot-dark">
+                                <tr>
+                                    <th scope="row"></th>
+                                    <td colspan="3"></td>
+                                    <td class="total-box">Total Basket : </td>
+                                    <td><b><%= totalCommande %>€</b></td>
+                                    <td><button id="checkout-button" class="btn btn-outline-info btn-sm btn-checkout" name="button-checkout">Checkout</button></td>
+                                </tr>
+                            </tfoot>
+                          
                         </tbody>
                     </table>
                 </div>
-                <div class="row">
-                    <div class="col-12 text-right">
-                        <button id="checkout-button" class="btn btn-outline-info btn-sm btn-checkout" name="button-checkout">Checkout</button>
-                    </div>
-                </div>
+                
 
 
             <%}%>
@@ -113,36 +157,8 @@
             
                 
         </div>
-
-        <script type="text/javascript">
-     var stripe = Stripe('pk_test_51IbjhSEifScnyKE579vUUWmbSL20LRIN7X13Nj03ndOsmQCCXtTGPg1pAs5LC5KDhxdkuWwRFePrT2PdYLfnKOL200dhh0nXdu');
-     var checkoutButton = document.getElementById('checkout-button');
-
-     checkoutButton.addEventListener('click', function() {
-       fetch('/create-checkout-session', {
-         method: 'POST',
-       })
-       .then(function(response) {
-         return response.json();
-       })
-       .then(function(session) {
-         return stripe.redirectToCheckout({ sessionId: session.id });
-       })
-       .then(function(result) {
-         // If `redirectToCheckout` fails due to a browser or network
-         // error, you should display the localized error message to your
-         // customer using `error.message`.
-         if (result.error) {
-           alert(result.error.message);
-         }
-       })
-       .catch(function(error) {
-         console.error('Error:', error);
-       });
-     });
-   </script>
         
-        
+        <script type="text/javascript" src="/javascript/script.js"></script>
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 

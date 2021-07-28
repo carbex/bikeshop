@@ -6,12 +6,16 @@ body{
 } 
 
 /* ---------- Home page -------------- */
+.shopping{
+    width: 30px;
+  }
 
 .jumbotron {
     background-image: url('/images/bike-background.jpg');
     background-size: cover;
     background-position: center;
-    height: 150px;
+    background-attachment: fixed;
+    height: 600px;
   }
 
 

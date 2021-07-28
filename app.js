@@ -1,16 +1,20 @@
+require('./models/dbConnect') // Connection a mongodb
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var indexRoute = require('./routes/index');
+var usersRoute = require('./routes/users');
+var shopRoute = require('./routes/shop');
+var stripeRoute = require('./routes/stripe');
 
 var session = require("express-session");
 
 var app = express();
 
+// Systeme de sessions
 app.use( 
   session({  
   secret: 'a4f8071f-c873-4447-8ee2', 
@@ -19,7 +23,7 @@ app.use(
    }) 
 );
 
-// view engine setup
+// Moteur de template
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
@@ -29,8 +33,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/', indexRoute);
+app.use('/users', usersRoute);
+app.use('/shop', shopRoute);
+app.use('/stripe', stripeRoute);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
